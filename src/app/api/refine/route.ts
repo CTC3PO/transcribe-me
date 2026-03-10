@@ -7,51 +7,93 @@ const groq = new Groq({
 
 export async function POST(req: NextRequest) {
     try {
-        const { text, style } = await req.json();
+        const { text, style, instructions } = await req.json();
 
         if (!text) {
             return NextResponse.json({ error: 'No text provided' }, { status: 400 });
         }
 
-        if (style === 'raw') {
+        if (style === 'raw' && !instructions) {
             return NextResponse.json({ text });
         }
 
         const stylePrompts: Record<string, string> = {
-            professional: "Rewrite the following text to be professional, clear, and concise. Fix any grammar issues and remove filler words. Keep it natural but suited for a workplace.",
-            casual: "Rewrite the following text to be casual and friendly. Keep the tone light but clear. Fix obvious transcription errors.",
-            bullets: "Convert the following text into a clean bulleted list. Fix grammar and remove filler words. Ensure it's easy to read.",
-            critique: "Act as a language tutor. Review this transcript for both English and Vietnamese. Identify potential mispronunciations (phonetic mishearings), suggest more natural phrasing, and highlight any interesting 'Vietlish' code-switching. Be encouraging but precise.",
+            professional: `REWRITE the text to be boardroom-ready. 
+- Use sophisticated, high-impact vocabulary. 
+- Fix ALL grammar and remove ALL filler words.
+- Format as a clear, authoritative statement or a short memo.
+- RETURN ONLY THE REFINED TEXT.
+
+EXAMPLE:
+User: "uh so like I was thinking maybe we should you know fix the budget for next year maybe."
+Assistant: "We must prioritize the finalization of next year's budget to ensure long-term fiscal stability."`,
+
+            casual: `REWRITE the text to be friendly, breezy, and conversational. 
+- Maintain a warm, natural vibe.
+- Fix obvious transcription errors but keep it approachable.
+- RETURN ONLY THE REFINED TEXT.
+
+EXAMPLE:
+User: "hey man I was wondering if you wanted to like hang out later"
+Assistant: "Hey! Just wondering if you're free to hang out later?"`,
+
+            bullets: `TRANSFORM the text into a clean, hierarchical bulleted list. 
+- Use '*' for bullets. 
+- Use **BOLD** for headers or key themes.
+- Organize logically into categories if possible.
+- RETURN ONLY THE BULLETED LIST.
+
+EXAMPLE:
+User: "get eggs and milk and also bread for the house"
+Assistant: * **Grocery List**
+  * Eggs
+  * Milk
+  * Bread`,
+
+            intelligence: `Act as a world-class Communication & Linguistics Engine. Analyze the transcript for:
+1. **CORE INTENT**: One sentence summary of the primary goal.
+2. **TONE ANALYSIS**: Identify emotional state and level of formality.
+3. **ACCENT & PRONUNCIATION**: Identify "Vietlish" nuances or phonetic mishearings.
+4. **POLISHED VERSION**: A perfectly refined, high-impact version.
+5. **PRO TIP**: A tactical tip for sounding more natural.
+
+FORMAT: Use clear Markdown headers (###) for each section.`,
         };
 
-        let activeStyle = style;
+        let activeStyle = style === 'critique' ? 'intelligence' : style;
 
-        // --- AUTOMATIC INTENT DETECTION ---
+        // --- ENHANCED INTENT DETECTION ---
         const lowerText = text.toLowerCase();
-        if (lowerText.includes('bullet point') || lowerText.includes('bullet points') || lowerText.includes('list item')) {
+        const hasKeyword = (keywords: string[]) => keywords.some(k => lowerText.includes(k));
+
+        if (hasKeyword(['bullet', 'list', 'points'])) {
             activeStyle = 'bullets';
-        } else if (lowerText.includes('professional mode') || lowerText.includes('make it professional')) {
+        } else if (hasKeyword(['professional', 'work', 'formal', 'fix for email'])) {
             activeStyle = 'professional';
-        } else if (lowerText.includes('casual mode') || lowerText.includes('make it casual')) {
+        } else if (hasKeyword(['casual', 'friendly', 'vibe'])) {
             activeStyle = 'casual';
-        } else if (lowerText.includes('critique my accent') || lowerText.includes('how was my accent')) {
-            activeStyle = 'critique';
+        } else if (hasKeyword(['accent', 'how do i sound', 'critique', 'tone', 'intelligence', 'analyze', 'vietlish', 'mishear'])) {
+            activeStyle = 'intelligence';
         }
 
-        const prompt = stylePrompts[activeStyle] || stylePrompts.professional;
+        const basePrompt = stylePrompts[activeStyle] || stylePrompts.professional;
+        const customPrompt = instructions ? `\n\nUSER CUSTOM INSTRUCTIONS: ${instructions}` : "";
 
         const completion = await groq.chat.completions.create({
             messages: [
                 {
                     role: "system",
-                    content: `${prompt} The original text might be a mix of American English and Vietnamese (Vietlish). Preserve the meaning and core content while applying the requested style. Return ONLY the rewritten text/critique.`
+                    content: `${basePrompt}${customPrompt} 
+
+Context: The user may be using "Vietlish" (mixed English-Vietnamese). 
+Constraint: DO NOT include any preamble like "Sure, here is your text" or "Refined version:". Start immediately with the content.`
                 },
                 {
                     role: "user",
-                    content: text.replace(/(bullet point|bullet points|professional mode|make it professional|casual mode|make it casual|critique my accent|how was my accent)/gi, '').trim(),
+                    content: text,
                 },
             ],
-            model: "llama-3.1-70b-versatile",
+            model: "llama-3.3-70b-versatile",
         });
 
         return NextResponse.json({

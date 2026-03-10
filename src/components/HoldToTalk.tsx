@@ -5,6 +5,8 @@ import { useRecorder } from '@/hooks/useRecorder';
 import { storage, TranscriptionRecord } from '@/lib/storage';
 import Visualizer from './Visualizer';
 import HistoryList from './HistoryList';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export default function HoldToTalk() {
     const [transcription, setTranscription] = useState<string>('');
@@ -12,10 +14,18 @@ export default function HoldToTalk() {
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [selectedStyle, setSelectedStyle] = useState('raw');
     const [isRefining, setIsRefining] = useState(false);
+    const [instructions, setInstructions] = useState('');
+    const [showInstructions, setShowInstructions] = useState(false);
 
     useEffect(() => {
         setHistory(storage.getAll());
+        setInstructions(storage.getInstructions());
     }, []);
+
+    const handleInstructionsChange = (val: string) => {
+        setInstructions(val);
+        storage.saveInstructions(val);
+    };
 
     const {
         isRecording,
@@ -29,13 +39,18 @@ export default function HoldToTalk() {
 
         let finalText = rawText;
 
-        if (selectedStyle !== 'raw') {
+        // Always refine if instructions exist, even if style is 'raw'
+        if (selectedStyle !== 'raw' || instructions.trim()) {
             setIsRefining(true);
             try {
                 const response = await fetch('/api/refine', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: rawText, style: selectedStyle }),
+                    body: JSON.stringify({
+                        text: rawText,
+                        style: selectedStyle,
+                        instructions: instructions.trim()
+                    }),
                 });
                 const data = await response.json();
                 if (data.text) {
@@ -49,9 +64,44 @@ export default function HoldToTalk() {
             }
         }
 
-        const updated = storage.save(finalText);
+        const updated = await storage.save(finalText);
         setHistory(updated);
     });
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.code === 'Space') {
+                if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return;
+                e.preventDefault(); // Always prevent scrolling
+
+                if (!isRecording && !isProcessing && !isRefining) {
+                    startRecording();
+                }
+            }
+        };
+
+        const handleKeyUp = (e: KeyboardEvent) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                if (isRecording) {
+                    stopRecording();
+                }
+            }
+        };
+
+        const handleBlur = () => {
+            if (isRecording) stopRecording();
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+        window.addEventListener('blur', handleBlur);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('keyup', handleKeyUp);
+            window.removeEventListener('blur', handleBlur);
+        };
+    }, [isRecording, isProcessing, isRefining, startRecording, stopRecording]);
 
     const handleCopy = (text: string, id: string = 'current') => {
         if (text) {
@@ -65,14 +115,14 @@ export default function HoldToTalk() {
         { id: 'raw', name: 'Raw', icon: '🎤' },
         { id: 'professional', name: 'Professional', icon: '💼' },
         { id: 'casual', name: 'Casual', icon: '☕' },
-        { id: 'bullets', name: 'Bullets', icon: '📝' },
-        { id: 'critique', name: 'Critique', icon: '🎓' },
+        { id: 'bullets', name: 'List', icon: '📝' },
+        { id: 'intelligence', name: 'Intelligence', icon: '🧠' },
     ];
 
     return (
-        <div className="flex flex-col items-center w-full max-w-md mx-auto p-8">
+        <div className="flex flex-col items-center w-full mx-auto p-4 sm:p-8">
             {/* Style Selector */}
-            <div className="flex gap-2 mb-8 bg-zinc-50 p-1 rounded-full border border-zinc-100">
+            <div className="flex gap-2 mb-4 bg-zinc-50 dark:bg-zinc-900/50 p-1 rounded-full border border-zinc-100 dark:border-white/10">
                 {styles.map((style) => (
                     <button
                         key={style.id}
@@ -80,14 +130,41 @@ export default function HoldToTalk() {
                         className={`
               px-4 py-1.5 rounded-full text-xs font-medium transition-all
               ${selectedStyle === style.id
-                                ? 'bg-white shadow-sm text-zinc-900 border border-zinc-200'
-                                : 'text-zinc-400 hover:text-zinc-600'}
+                                ? 'bg-white dark:bg-zinc-800 shadow-sm text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-white/10'
+                                : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200'}
             `}
                     >
                         <span className="mr-1">{style.icon}</span> {style.name}
                     </button>
                 ))}
             </div>
+
+            {/* Instructions Toggle */}
+            <div className="w-full flex flex-col items-center gap-2 mb-8">
+                <button
+                    onClick={() => setShowInstructions(!showInstructions)}
+                    className="text-[10px] text-zinc-400 uppercase tracking-widest hover:text-zinc-600 transition-colors flex items-center gap-1"
+                >
+                    <span>{showInstructions ? '−' : '+'} Custom Instructions & Accent Training</span>
+                    {instructions.trim() && <span className="w-1 h-1 bg-red-500 rounded-full" />}
+                </button>
+                {showInstructions && (
+                    <p className="text-[9px] text-zinc-400 italic text-center max-w-xs leading-relaxed">
+                        To train Flow for your accent: speak naturally and use instructions like <span className="text-indigo-500">"I have a Vietnamese accent, prioritize phonetically similar English words."</span>
+                    </p>
+                )}
+            </div>
+
+            {showInstructions && (
+                <div className="w-full mb-8 animate-in fade-in zoom-in-95 duration-200">
+                    <textarea
+                        value={instructions}
+                        onChange={(e) => handleInstructionsChange(e.target.value)}
+                        placeholder="e.g. 'I speak Vietlish. Check my accent.' or 'I have a deep rasp, ignore background static.'"
+                        className="w-full h-24 bg-white/40 dark:bg-zinc-900/40 coffee-light:bg-white/60 coffee-dark:bg-black/20 backdrop-blur-md border border-zinc-200 dark:border-white/10 coffee-light:border-[#452B1F]/10 coffee-dark:border-white/10 rounded-[1.5rem] p-4 text-sm text-zinc-600 dark:text-zinc-400 coffee-light:text-[#452B1F] coffee-dark:text-[#f4ece1] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all resize-none shadow-sm"
+                    />
+                </div>
+            )}
 
             <Visualizer stream={stream} isRecording={isRecording} />
 
@@ -99,10 +176,10 @@ export default function HoldToTalk() {
                 onTouchEnd={stopRecording}
                 disabled={isProcessing || isRefining}
                 className={`
-          relative w-32 h-32 rounded-full flex items-center justify-center transition-all duration-300
+          relative w-32 h-32 rounded-full flex items-center justify-center transition-all duration-300 mt-12
           ${isRecording
                         ? 'bg-red-600 scale-95 shadow-inner'
-                        : 'bg-zinc-900 scale-100 shadow-xl hover:bg-zinc-800'}
+                        : 'bg-zinc-900 dark:bg-zinc-800 coffee-light:bg-[#452B1F] coffee-dark:bg-[#f4ece1] scale-100 shadow-xl hover:bg-zinc-800 dark:hover:bg-zinc-700 coffee-light:hover:bg-zinc-800 coffee-dark:hover:bg-white'}
           ${(isProcessing || isRefining) ? 'animate-pulse cursor-not-allowed opacity-50' : 'cursor-pointer'}
         `}
             >
@@ -127,8 +204,8 @@ export default function HoldToTalk() {
                 </svg>
             </button>
 
-            <p className="mt-6 text-zinc-500 font-mono text-xs tracking-tighter uppercase">
-                {isRefining ? 'Polishing...' : isProcessing ? 'Transcribing...' : isRecording ? 'Listening...' : 'Hold to Talk'}
+            <p className="mt-6 text-zinc-500 coffee-light:text-[#452B1F]/60 coffee-dark:text-[#f4ece1]/60 font-mono text-xs tracking-tighter uppercase text-center h-4">
+                {isRefining ? 'Polishing Style...' : isProcessing ? 'Transcribing...' : isRecording ? 'Listening...' : 'Hold to Talk'}
             </p>
 
             {error && (
@@ -137,8 +214,15 @@ export default function HoldToTalk() {
 
             {transcription && (
                 <div className="mt-12 w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-6 relative group">
-                        <p className="text-zinc-800 text-lg leading-relaxed whitespace-pre-wrap">{transcription}</p>
+                    <div className="bg-white/40 dark:bg-zinc-900/40 coffee-light:bg-white/60 coffee-dark:bg-black/40 backdrop-blur-md border border-zinc-100/50 dark:border-white/10 coffee-light:border-[#452B1F]/10 coffee-dark:border-white/10 rounded-[2rem] p-8 relative group shadow-xl shadow-indigo-500/5">
+                        <div className="text-zinc-800 dark:text-zinc-100 coffee-light:text-[#452B1F] coffee-dark:text-[#f4ece1] text-lg leading-relaxed whitespace-pre-wrap prose prose-sm dark:prose-invert max-w-none 
+                            prose-headings:text-zinc-900 dark:prose-headings:text-white coffee-light:prose-headings:text-[#452B1F] coffee-dark:prose-headings:text-[#f4ece1]
+                            prose-p:leading-relaxed prose-li:my-0
+                            prose-strong:text-indigo-600 dark:prose-strong:text-indigo-400 coffee-light:prose-strong:text-[#452B1F] coffee-dark:prose-strong:text-[#f4ece1]">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {transcription}
+                            </ReactMarkdown>
+                        </div>
                         <button
                             onClick={() => handleCopy(transcription, 'current')}
                             className={`

@@ -69,12 +69,12 @@ export default function Visualizer({ stream, isRecording }: VisualizerProps) {
     }, [stream, isRecording]);
 
     return (
-        <div className="w-full h-24 bg-black/5 rounded-xl overflow-hidden mb-8 flex items-center justify-center">
+        <div className="w-full h-24 bg-zinc-500/5 dark:bg-zinc-900/40 backdrop-blur-sm rounded-3xl border border-zinc-200/50 dark:border-white/5 overflow-hidden mb-8 flex items-center justify-center">
             {isRecording ? (
-                <canvas ref={canvasRef} width={400} height={100} className="w-full h-full" />
+                <canvas ref={canvasRef} width={800} height={100} className="w-full h-full" />
             ) : (
-                <div className="text-muted text-sm font-mono tracking-widest opacity-30 text-zinc-400">
-                    WAITING FOR INPUT...
+                <div className="text-zinc-400 text-xs font-mono tracking-[0.2em] opacity-40 uppercase">
+                    Waiting for input...
                 </div>
             )}
         </div>

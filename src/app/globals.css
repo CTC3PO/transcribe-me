@@ -2,22 +2,125 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
+    --background: #ffffff;
+    --foreground: #171717;
+    --accent-glow: rgba(45, 212, 191, 0.15);
+    --card-bg: rgba(255, 255, 255, 0.8);
+    --border: rgba(0, 0, 0, 0.05);
+  }
+
+  .dark {
+    --background: #121212;
     --foreground: #ededed;
+    --accent-glow: rgba(99, 102, 241, 0.1);
+    --card-bg: rgba(24, 24, 27, 0.8);
+    --border: rgba(255, 255, 255, 0.05);
+  }
+
+  .coffee-light {
+    --background: #f4ece1;
+    --foreground: #452B1F;
+    --accent-glow: rgba(111, 78, 55, 0.1);
+    --card-bg: rgba(255, 255, 255, 0.6);
+    --border: rgba(69, 43, 31, 0.1);
+  }
+
+  .coffee-dark {
+    --background: #452B1F;
+    --foreground: #f4ece1;
+    --accent-glow: rgba(244, 236, 225, 0.05);
+    --card-bg: rgba(0, 0, 0, 0.2);
+    --border: rgba(244, 236, 225, 0.1);
   }
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  @apply bg-[var(--background)] text-[var(--foreground)] transition-colors duration-500;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Multi-color background splashes */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  width: 100vw;
+  height: 100vh;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.3;
+  transition: opacity 0.5s ease;
+}
+
+body::before {
+  background:
+    radial-gradient(circle at 80% 10%, rgba(45, 212, 191, 0.4) 0%, transparent 40%),
+    radial-gradient(circle at 20% 80%, rgba(244, 114, 182, 0.3) 0%, transparent 40%),
+    radial-gradient(circle at 10% 20%, rgba(251, 191, 36, 0.3) 0%, transparent 40%),
+    radial-gradient(circle at 90% 90%, rgba(167, 139, 250, 0.3) 0%, transparent 40%);
+  filter: blur(80px);
+}
+
+.dark body::before {
+  background:
+    radial-gradient(circle at 70% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 30% 80%, rgba(167, 139, 250, 0.1) 0%, transparent 40%);
+  opacity: 0.5;
+}
+
+/* Coffee Themes Overrides */
+.coffee-light .bg-white {
+  @apply bg-white/60 border-[#452B1F]/10 backdrop-blur-xl;
+}
+
+.coffee-light .bg-zinc-50 {
+  @apply bg-[#eae0d2];
+}
+
+.coffee-light .text-zinc-900 {
+  @apply text-[#452B1F];
+}
+
+.coffee-light .text-zinc-500 {
+  @apply text-[#452B1F]/60;
+}
+
+.coffee-light .bg-zinc-900 {
+  @apply bg-[#452B1F] text-white;
+}
+
+.coffee-dark .bg-white {
+  @apply bg-black/20 border-white/5 backdrop-blur-xl;
+}
+
+.coffee-dark .bg-zinc-50 {
+  @apply bg-black/10;
+}
+
+.coffee-dark .text-zinc-900 {
+  @apply text-[#f4ece1];
+}
+
+.coffee-dark .text-zinc-500 {
+  @apply text-[#f4ece1]/60;
+}
+
+.coffee-dark .bg-zinc-900 {
+  @apply bg-[#f4ece1] text-[#452B1F];
+}
+
+.coffee-light body::before,
+.coffee-dark body::before {
+  background:
+    radial-gradient(circle at 80% 20%, rgba(111, 78, 55, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 20% 80%, rgba(111, 78, 55, 0.1) 0%, transparent 40%);
+  opacity: 1;
 }
 
 @layer utilities {
