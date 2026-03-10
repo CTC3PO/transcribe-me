@@ -2,20 +2,20 @@
 
 **"Ready to speak? I'm ready to listen."**
 
-Flow is a high-performance, premium Speech-to-Text PWA designed for mixed American-Vietnamese (Vietlish) workflows. It provides ultra-low latency transcriptions and intelligent post-processing using Groq's high-speed inference engine.
+Flow is a high-performance, premium Speech-to-Text PWA designed for high-impact communication. It provides ultra-low latency transcriptions and intelligent post-processing using Groq's high-speed inference engine.
 
-## 🚀 Features
+## Features
 
 - **Ultra-Fast Transcription**: Powered by Groq's Whisper-large-v3 (~1s turnaround).
-- **Intelligence Layer (🧠)**: Advanced linguistic analysis—choose between **Professional**, **Casual**, **Bullets**, or **Intelligence**.
-- **Accent & Tone Analysis**: Get deep feedback on your pronunciation ("Vietlish" nuances) and emotional tone.
+- **Intelligence Layer**: Advanced linguistic analysis—choose between **Professional**, **Casual**, **Bullets**, or **Intelligence**.
+- **Accent & Tone Analysis**: Get deep feedback on your pronunciation and emotional tone.
 - **Custom Instructions**: Train Flow for your specific voice and accent patterns.
 - **Dual Coffee Themes**: Smooth **Coffee Light** and immersive **Dark Roast** for late-night sessions.
 - **Responsive Layout**: Wider, fluid flex layout optimized for both mobile and desktop browser views.
 - **Local History**: Your last 20 transcriptions are saved in the browser for instant access and one-tap copy.
 - **PWA support**: Installable on iOS, Android, and Desktop as a native-feeling app with PWA sync readiness.
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Core
 - **Framework**: [Next.js 14](https://nextjs.org/) (App Router)
@@ -32,7 +32,7 @@ Flow is a high-performance, premium Speech-to-Text PWA designed for mixed Americ
 - **Theme Management**: `next-themes` for persistent light/dark/coffee mode switching.
 - **Icons**: [Lucide React](https://lucide.dev/).
 
-## 🛠️ Setup & Startup
+## Setup & Startup
 
 ### Prerequisites
 - Node.js 18+
