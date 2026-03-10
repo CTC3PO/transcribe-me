@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase, JournalEntry } from '@/lib/supabase';
 import { Book, Mic, Plus, Trash2, Loader2 } from 'lucide-react';
+import Image from 'next/image';
 import { useRecorder } from '@/hooks/useRecorder';
 import { User } from '@supabase/supabase-js';
 
@@ -170,7 +171,13 @@ export function JournalTab() {
                                 <div className="flex gap-2 overflow-x-auto pb-2">
                                     {entry.photo_urls.map((url, i) => (
                                         <div key={i} className="relative w-24 h-24 rounded-xl overflow-hidden bg-zinc-100 shrink-0">
-                                            <img src={url} alt="Journal attachment" className="w-full h-full object-cover" />
+                                            <Image
+                                                src={url}
+                                                alt="Journal attachment"
+                                                width={96} // Equivalent to w-24 (24 * 4 = 96px)
+                                                height={96} // Equivalent to h-24 (24 * 4 = 96px)
+                                                className="w-full h-full object-cover"
+                                            />
                                         </div>
                                     ))}
                                 </div>

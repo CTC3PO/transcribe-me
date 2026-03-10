@@ -8,7 +8,17 @@ import HistoryList from './HistoryList';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-export default function HoldToTalk() {
+interface HoldToTalkProps {
+    setIsRecording?: (val: boolean) => void;
+    setIsProcessing?: (val: boolean) => void;
+    setIsRefining?: (val: boolean) => void;
+}
+
+export default function HoldToTalk({
+    setIsRecording: setParentRecording,
+    setIsProcessing: setParentProcessing,
+    setIsRefining: setParentRefining
+}: HoldToTalkProps) {
     const [transcription, setTranscription] = useState<string>('');
     const [history, setHistory] = useState<TranscriptionRecord[]>([]);
     const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -67,6 +77,18 @@ export default function HoldToTalk() {
         const updated = await storage.save(finalText);
         setHistory(updated);
     });
+
+    useEffect(() => {
+        setParentRecording?.(isRecording);
+    }, [isRecording, setParentRecording]);
+
+    useEffect(() => {
+        setParentProcessing?.(isProcessing);
+    }, [isProcessing, setParentProcessing]);
+
+    useEffect(() => {
+        setParentRefining?.(isRefining);
+    }, [isRefining, setParentRefining]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -150,7 +172,7 @@ export default function HoldToTalk() {
                 </button>
                 {showInstructions && (
                     <p className="text-[9px] text-zinc-400 italic text-center max-w-xs leading-relaxed">
-                        To train Flow for your accent: speak naturally and use instructions like <span className="text-indigo-500">"I have a Vietnamese accent, prioritize phonetically similar English words."</span>
+                        To train Flow for your accent: speak naturally and use instructions like <span className="text-indigo-500">&quot;I have a Vietnamese accent, prioritize phonetically similar English words.&quot;</span>
                     </p>
                 )}
             </div>

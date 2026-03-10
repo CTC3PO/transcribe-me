@@ -10,6 +10,9 @@ import { useEffect } from 'react';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'transcribe' | 'journal'>('transcribe');
+  const [isRecording, setIsRecording] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isRefining, setIsRefining] = useState(false);
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -79,10 +82,14 @@ export default function Home() {
                   Flow<span className="text-indigo-600">.</span>
                 </h2>
                 <p className="text-zinc-400 dark:text-zinc-500 coffee-light:text-[#452B1F]/40 coffee-dark:text-[#f4ece1]/40 text-lg font-medium">
-                  Ready to speak? I'm ready to listen.
+                  {isRefining ? 'Polishing Style...' : isProcessing ? 'Transcribing...' : isRecording ? 'Listening...' : 'Ready to speak? I&apos;m ready to listen.'}
                 </p>
               </div>
-              <HoldToTalk />
+              <HoldToTalk
+                setIsRecording={setIsRecording}
+                setIsProcessing={setIsProcessing}
+                setIsRefining={setIsRefining}
+              />
             </div>
           ) : (
             <JournalTab />
